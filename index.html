@@ -4,7 +4,7 @@
 <base target="_top">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Шашлык · Karbii Dzor</title>
+<title>Пикник</title>
 <style>
   :root {
     --bg: #f6f7f4; --card: #ffffff; --ink: #1d231c; --muted: #6a7266; --line: #e3e6df;
@@ -30,12 +30,12 @@
   .info .place { font-weight: 600; color: var(--accent); text-decoration: none; overflow-wrap: anywhere; }
   .info .text { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
   .info .pay { margin: 0; overflow-wrap: anywhere; }
-  .info .link { justify-self: start; }
+  .info .link, .info .btn { justify-self: start; }
   .party { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 15px; }
   .party .stepper .btn { width: 44px; }
   .org { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 16%, var(--card)); display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 14px; }
-  .tabs { display: flex; gap: 6px; margin: 16px 0 12px; background: var(--line); padding: 4px; border-radius: 12px; }
-  .tabs button { flex: 1; min-height: 44px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: inherit; font-weight: 600; }
+  .tabs { display: flex; gap: 4px; margin: 16px 0 12px; background: var(--line); padding: 4px; border-radius: 12px; }
+  .tabs button { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 4px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; }
   .tabs button[aria-selected="true"] { background: var(--card); box-shadow: var(--shadow); }
   button, input, textarea { font: inherit; color: inherit; }
   .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); font-weight: 600; }
@@ -46,7 +46,7 @@
   .link { border: 0; background: none; padding: 0 2px; color: var(--accent); font-weight: 600; min-height: 32px; }
   .icon { width: 40px; min-height: 40px; border: 0; background: none; border-radius: 8px; color: var(--muted); font-size: 16px; flex: none; }
   .icon:active { background: var(--line); }
-  input[type=text], input[type=time], input[type=password], textarea { width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  input[type=text], input[type=time], input[type=date], input[type=password], textarea { width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
   textarea { resize: vertical; min-height: 64px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .row > input { flex: 1; min-width: 0; }
@@ -87,7 +87,21 @@
   .overlay[hidden] { display: none; }
   .dialog { background: var(--card); color: var(--ink); width: 100%; max-width: 420px; border-radius: 14px; padding: 18px; display: grid; gap: 12px; }
   .dialog h2 { margin: 0; font-size: 19px; }
-  .dialog p { margin: 0; color: var(--muted); }
+  .dialog p { margin: 0; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; }
+  .dialog.tall { max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .dialog label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+  .dialog textarea { min-height: 120px; }
+  .back { display: inline-block; margin-bottom: 8px; color: var(--accent); font-weight: 600; text-decoration: none; font-size: 15px; }
+  a.evcard { display: block; color: inherit; text-decoration: none; }
+  .evcard h3 { color: var(--ink); }
+  .evcard .meta { color: var(--muted); font-size: 14px; }
+  .badge.accent { background: color-mix(in srgb, var(--accent) 20%, var(--card)); color: var(--accent); }
+  .past-toggle { margin-top: 16px; }
+  ul.list.people li { align-items: flex-start; }
+  .person { display: grid; gap: 2px; }
+  .person .sub { font-size: 14px; color: var(--muted); }
+  .person .note { font-style: italic; }
+  .noride { color: var(--danger); }
   .err { color: var(--danger); font-size: 14px; min-height: 1em; margin: 0; }
   .dialog .row .btn { flex: 1; }
   .toast { position: fixed; left: calc(var(--vw, 100vw) / 2); bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 10px; font-size: 15px; z-index: 30; opacity: 0; pointer-events: none; transition: opacity .2s; }
@@ -95,14 +109,33 @@
   .loading { text-align: center; color: var(--muted); padding: 40px 0; }
   [hidden] { display: none !important; }
 </style>
-<meta property="og:title" content="Шашлык · Karbii Dzor">
-<meta property="og:description" content="воскресенье, 4 октября · Karbii Dzor Resort">
-<meta name="description" content="воскресенье, 4 октября · Karbii Dzor Resort">
+<meta property="og:title" content="Пикник">
+<meta property="og:description" content="Кто что берёт, машины и такси — все наши события">
+<meta name="description" content="Кто что берёт, машины и такси — все наши события">
 <script>window.PICNIC_API = "https://script.google.com/macros/s/AKfycbxTvbm7QXkR9946721i6ef9lnYifC9KqZB_AXLFKqLiyN5PPKdcDWZsbiE1Vs8pBBdY/exec";</script>
 </head>
 <body>
 <div class="wrap">
+  <div id="home" hidden>
+    <header>
+      <h1>Наши события</h1>
+      <p class="muted" style="margin:4px 0 0">Пикники, поездки и встречи: кто что берёт, машины и такси</p>
+    </header>
+    <button class="btn primary wide" id="newEvent" type="button" style="margin-top:16px">➕ Новое событие</button>
+    <div id="homeList"></div>
+    <p class="empty" id="homeEmpty" hidden>Пока нет событий — создайте первое</p>
+    <button class="link past-toggle" id="pastToggle" type="button" hidden></button>
+    <div id="pastList" hidden></div>
+  </div>
+
+  <div id="missing" hidden>
+    <p class="empty">Событие не найдено — возможно, его удалили.</p>
+    <p style="text-align:center"><a class="back" href="./">← Все события</a></p>
+  </div>
+
+  <div id="eventView">
   <header>
+    <a class="back" id="backLink" href="./" hidden>← Все события</a>
     <h1 id="title">Пикник</h1>
     <div class="date" id="date" hidden></div>
     <section class="info" id="infoCard" hidden>
@@ -110,17 +143,19 @@
       <p class="text" id="infoText"></p>
       <p class="pay" id="infoPay"></p>
       <button class="link" id="infoToggle" type="button"></button>
+      <button class="btn" id="infoEdit" type="button" hidden>✏️ Изменить информацию</button>
     </section>
     <div class="stats" id="stats"></div>
     <div class="whoami" id="whoami" hidden>Вы: <span id="meNick" class="nick"></span> · <button class="link" id="changeNick" type="button">сменить</button></div>
     <div class="party" id="party" hidden></div>
-    <div class="org" id="orgBanner" hidden><span>Режим организатора — можно менять всё</span><button class="btn" id="orgExit" type="button">Выйти</button></div>
+    <div class="org" id="orgBanner" hidden><span>Режим организатора — можно менять всё · <button class="link" id="orgShowPin" type="button">PIN</button></span><button class="btn" id="orgExit" type="button">Выйти</button></div>
   </header>
 
   <nav class="tabs" role="tablist">
     <button type="button" role="tab" data-tab="items" id="tabBtn-items">Что берём</button>
     <button type="button" role="tab" data-tab="cars" id="tabBtn-cars">Машины</button>
     <button type="button" role="tab" data-tab="taxis" id="tabBtn-taxis">Такси</button>
+    <button type="button" role="tab" data-tab="people" id="tabBtn-people">Люди</button>
   </nav>
 
   <div class="loading" id="loading">Загрузка…</div>
@@ -185,9 +220,18 @@
       <div id="taxiList"></div>
       <p class="empty" id="taxisEmpty">Пока нет такси. Создайте своё — попутчики присоединятся.</p>
     </section>
+
+    <section id="tab-people" hidden>
+      <div class="status" id="peopleSummary"></div>
+      <button class="btn wide" id="noteBtn" type="button" style="margin-top:12px" hidden></button>
+      <ul class="list people" id="peopleList"></ul>
+      <p class="empty" id="peopleEmpty">Пока никто не записался</p>
+    </section>
   </main>
 
-  <footer><button class="link" id="orgOpen" type="button">Организатор</button><div class="muted" id="debugLine"></div></footer>
+  <footer><span id="copyWrap"><button class="link" id="copyLink" type="button">🔗 Скопировать ссылку</button> · </span><button class="link" id="orgOpen" type="button">Организатор</button></footer>
+  </div>
+  <footer><div class="muted" id="debugLine"></div></footer>
 </div>
 
 <div class="overlay" id="dialog" hidden>
@@ -200,6 +244,28 @@
       <button class="btn" type="button" id="dialogCancel">Отмена</button>
       <button class="btn primary" type="submit" id="dialogOk">OK</button>
     </div>
+  </form>
+</div>
+
+<div class="overlay" id="eventOverlay" hidden>
+  <form class="dialog tall" id="eventForm" autocomplete="off">
+    <h2 id="eventFormTitle">Новое событие</h2>
+    <label>Название
+      <input type="text" id="evTitle" maxlength="60" placeholder="Например: Шашлык в Гарни" required></label>
+    <label>Дата (можно позже)
+      <input type="date" id="evDate"></label>
+    <label>Место
+      <input type="text" id="evPlace" maxlength="120" placeholder="Например: Karbii Dzor Resort"></label>
+    <label>Описание
+      <textarea id="evInfo" maxlength="1000" placeholder="Что уже есть на месте, сколько стоит, что взять с собой…"></textarea></label>
+    <label>Кому писать по оплате и брони
+      <input type="text" id="evPay" maxlength="40" placeholder="@ник (необязательно)"></label>
+    <p class="err" id="evErr"></p>
+    <div class="row">
+      <button class="btn" type="button" id="evCancel">Отмена</button>
+      <button class="btn primary" type="submit" id="evSubmit">Создать</button>
+    </div>
+    <button class="btn danger wide" type="button" id="evDelete" hidden>Удалить событие</button>
   </form>
 </div>
 
@@ -239,8 +305,7 @@
     };
   }
   const local = store('localStorage'), session = store('sessionStorage');
-  const me = () => local.get('picnic.nick');
-  const orgPin = () => session.get('picnic.pin');
+  const me = () => local.get('picnic.nick'); // one nickname for all events
 
   // ---------- nickname rules (mirror of normNick on the server) ----------
   const USERNAME_RE = /^@[A-Za-z0-9_]{5,32}$/;
@@ -257,7 +322,14 @@
   // app's doPost, whose URL the build injects as window.PICNIC_API. text/plain keeps it a "simple"
   // cross-site request: no CORS preflight, and no Google cookies.
   const inAppsScript = !!(window.google && google.script && google.script.run);
+  // which page: ?e=<id> is an event, no id is the start page with all events.
+  // The Apps Script-hosted page (backup link) is always the first event.
+  const EVENT = inAppsScript ? 'main' : (new URLSearchParams(location.search).get('e') || '');
+  // the creator's PIN stays on their phone (localStorage); a PIN typed by hand lasts for the tab (sessionStorage)
+  const pinKey = 'picnic.pin.' + EVENT;
+  const orgPin = () => local.get(pinKey) || session.get(pinKey);
   function call(req) {
+    if (EVENT) req = Object.assign({ event: EVENT }, req);
     if (inAppsScript) {
       return new Promise((resolve, reject) =>
         google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).api(req));
@@ -279,6 +351,7 @@
       .catch(() => ({ ok: false, error: 'Нет связи — попробуйте ещё раз' }));
     clearTimeout(slow);
     busy = false;
+    if (res.missing) { hideToast(); showMissing(); return false; }
     if (res.state) render(res.state);
     if (!res.ok) toast(res.error); else hideToast('Сохраняю…');
     return res.ok;
@@ -319,7 +392,7 @@
 
   // ---------- dialog (own implementation: native confirm/prompt are unreliable in iframes) ----------
   let dialogResolve = null, dialogValidate = null;
-  function dialog({ title, text = '', input = null, ok = 'OK', danger = false, validate = null }) {
+  function dialog({ title, text = '', input = null, ok = 'OK', cancel = 'Отмена', danger = false, validate = null }) {
     $('dialogTitle').textContent = title;
     $('dialogText').textContent = text; $('dialogText').hidden = !text;
     $('dialogErr').textContent = '';
@@ -329,6 +402,7 @@
     $('dialogOk').textContent = ok;
     $('dialogOk').className = 'btn ' + (danger ? 'danger' : 'primary');
     $('dialogCancel').hidden = !!(input && input.required);
+    $('dialogCancel').textContent = cancel;
     dialogValidate = validate;
     $('dialog').hidden = false;
     setTimeout(() => (input ? inp : $('dialogOk')).focus(), 30);
@@ -358,18 +432,25 @@
 
   // ---------- organiser mode ----------
   $('orgOpen').addEventListener('click', async () => {
-    const pin = await dialog({ title: 'Режим организатора', text: 'PIN есть в таблице, во вкладке Settings', input: { type: 'password', inputMode: 'numeric', placeholder: 'PIN' }, ok: 'Войти' });
+    const pin = await dialog({ title: 'Режим организатора', text: 'PIN есть у создателя события', input: { type: 'password', inputMode: 'numeric', placeholder: 'PIN' }, ok: 'Войти' });
     if (!pin) return;
-    session.set('picnic.pin', pin.trim());
+    session.set(pinKey, pin.trim());
     // act() already re-rendered with the PIN set; on failure drop it and render again,
     // otherwise the organiser banner and buttons stay on screen for a rejected PIN
-    if (!(await act({ action: 'checkPin' }))) session.del('picnic.pin');
+    if (!(await act({ action: 'checkPin' }))) session.del(pinKey);
     render(S);
   });
-  $('orgExit').addEventListener('click', () => { session.del('picnic.pin'); render(S); });
+  $('orgExit').addEventListener('click', async () => {
+    // the creator's PIN lives only on this phone: leaving forgets it, so give them a last look
+    if (local.get(pinKey) && !(await dialog({
+      title: 'Выйти из режима организатора?', text: 'PIN удалится с этого телефона. Запишите его: ' + local.get(pinKey), ok: 'Выйти', danger: true,
+    }))) return;
+    local.del(pinKey); session.del(pinKey); render(S);
+  });
+  $('orgShowPin').addEventListener('click', () => dialog({ title: 'PIN организатора', text: orgPin() + '\nС ним можно управлять событием с другого телефона.', cancel: 'Закрыть' }));
 
   // ---------- tabs ----------
-  const TABS = ['items', 'cars', 'taxis'];
+  const TABS = ['items', 'cars', 'taxis', 'people'];
   function showTab(name) {
     TABS.forEach(t => {
       $('tab-' + t).hidden = t !== name;
@@ -523,10 +604,12 @@
     local.set('picnic.infoCollapsed', local.get('picnic.infoCollapsed') === '1' ? '0' : '1');
     render(S);
   });
+  $('infoEdit').addEventListener('click', () => openEventForm(S));
   function renderInfo() {
     const has = !!(S.place || S.info || S.pay);
-    $('infoCard').hidden = !has;
-    if (!has) return;
+    $('infoCard').hidden = !has && !orgPin(); // the organiser sees it even empty, to fill it in
+    $('infoEdit').hidden = !orgPin();
+    if ($('infoCard').hidden) return;
     const collapsed = local.get('picnic.infoCollapsed') === '1';
     $('infoPlace').hidden = !S.place;
     $('infoPlace').textContent = '📍 ' + S.place;
@@ -576,9 +659,158 @@
         h('output', {}, String(n)),
         h('button', { class: 'btn', type: 'button', 'aria-label': 'больше', disabled: n >= 10, onclick: () => bumpParty(1) }, '+')),
       myPartyRow() && h('button', { class: 'link', type: 'button', onclick: async () => {
-        if (await dialog({ title: 'Не едете?', text: 'Вас уберут из подсчёта людей. Ваши вещи и машина останутся — удалите их сами, если нужно.', ok: 'Не еду', danger: true })) act({ action: 'leave' });
+        if (await dialog({ title: 'Не едете?', text: 'Вас уберут из подсчёта людей, заметка удалится. Ваши вещи и машина останутся — удалите их сами, если нужно.', ok: 'Не еду', danger: true })) act({ action: 'leave' });
       } }, 'не еду')));
   }
+
+  // ---------- dates: new events store YYYY-MM-DD; anything else is shown as typed ----------
+  const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+  function fmtDate(v) {
+    const m = ISO_RE.exec(v || '');
+    if (!m) return v || '';
+    const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+    if (+m[1] !== new Date().getFullYear()) opts.year = 'numeric';
+    return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('ru-RU', opts);
+  }
+  function todayIso() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  // ---------- «Люди»: everyone once, with how they get there and what they bring ----------
+  $('noteBtn').addEventListener('click', async () => {
+    const mine = (S.roster || []).find(r => isMe(r.nick));
+    const note = await dialog({
+      title: 'Заметка о себе', text: 'Её увидят все на вкладке «Люди». Оставьте пустой, чтобы удалить.',
+      input: { placeholder: 'Например: приеду к 14:00', value: mine ? mine.note : '' }, ok: 'Сохранить',
+      validate: v => (String(v).trim().length > 80 ? 'Не больше 80 символов' : null),
+    });
+    if (note != null) act({ action: 'setNote', note: note.trim() });
+  });
+  function rideText(r) {
+    if (!r) return [h('span', { class: 'noride' }, 'без транспорта')];
+    if (r.role === 'driver') {
+      const seatsLeft = r.free > 0 ? ' · свободно ' + r.free : ' · мест нет';
+      return [(r.kind === 'taxi' ? '🚕 собирает такси' : '🚗 за рулём') + seatsLeft];
+    }
+    return [r.kind === 'taxi' ? '🚕 в такси с ' : '🚗 едет с ', nickNode(r.with)];
+  }
+  function personRow(p) {
+    return h('li', {}, h('div', { class: 'line-text person' },
+      h('span', {}, nickNode(p.nick), p.count > 1 ? ' · ' + p.count + ' чел.' : '', isMe(p.nick) ? h('span', { class: 'muted' }, ' (вы)') : null),
+      h('span', { class: 'sub' }, ...rideText(p.ride)),
+      p.items.length ? h('span', { class: 'sub' }, 'Берёт: ' + p.items.join(', ')) : null,
+      p.note ? h('span', { class: 'sub note' }, p.note) : null));
+  }
+  function renderPeople() {
+    const roster = S.roster || [], st = S.stats;
+    $('peopleSummary').replaceChildren(h('b', {}, String(st.people)), ' ' + plural(st.people, ['человек', 'человека', 'человек']),
+      ' · без транспорта: ', h('b', {}, String(st.noRide)));
+    const mine = roster.find(r => isMe(r.nick));
+    $('noteBtn').hidden = !me();
+    $('noteBtn').textContent = mine && mine.note ? '📝 Изменить заметку' : '📝 Написать заметку о себе';
+    $('peopleList').replaceChildren(...roster.map(personRow));
+    $('peopleList').hidden = !roster.length;
+    $('peopleEmpty').hidden = !!roster.length;
+  }
+
+  // ---------- event form: create (anyone) and edit (organiser) ----------
+  let eventFormOpen = false;
+  function openEventForm(ev) {
+    eventFormOpen = ev ? 'edit' : 'new';
+    $('eventFormTitle').textContent = ev ? 'Информация о событии' : 'Новое событие';
+    $('evTitle').value = ev ? ev.title : '';
+    $('evDate').value = ev && ISO_RE.test(ev.date) ? ev.date : '';
+    $('evPlace').value = ev ? ev.place : '';
+    $('evInfo').value = ev ? ev.info : '';
+    $('evPay').value = ev ? ev.pay : '';
+    $('evSubmit').textContent = ev ? 'Сохранить' : 'Создать';
+    $('evDelete').hidden = !ev;
+    $('evErr').textContent = '';
+    $('eventOverlay').hidden = false;
+    setTimeout(() => $('evTitle').focus(), 30);
+  }
+  function closeEventForm() { eventFormOpen = false; $('eventOverlay').hidden = true; }
+  $('evCancel').addEventListener('click', closeEventForm);
+  const evFields = () => ({ title: $('evTitle').value, date: $('evDate').value, place: $('evPlace').value, info: $('evInfo').value, pay: $('evPay').value });
+  $('eventForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if ($('evTitle').value.trim().length < 3) { $('evErr').textContent = 'Название: от 3 символов'; return; }
+    if (eventFormOpen === 'edit') { if (await act(Object.assign({ action: 'editEvent' }, evFields()))) closeEventForm(); return; }
+    if (busy) return;
+    busy = true; $('evSubmit').disabled = true; $('evErr').textContent = '';
+    const res = await call(Object.assign({ action: 'createEvent', nick: me() }, evFields()))
+      .catch(() => ({ ok: false, error: 'Нет связи — попробуйте ещё раз' }));
+    busy = false; $('evSubmit').disabled = false;
+    if (!res.ok) { $('evErr').textContent = res.error; return; }
+    // the PIN comes back only in this one response: keep it on this phone, then open the new event
+    local.set('picnic.pin.' + res.event, res.pin);
+    session.set('picnic.justCreated', res.event);
+    location.href = '?e=' + encodeURIComponent(res.event);
+  });
+  $('evDelete').addEventListener('click', async () => {
+    closeEventForm();
+    const n = S.stats.participants;
+    const text = '«' + S.title + '» и всё, что в нём записано' + (n ? ' (' + n + ' ' + plural(n, ['участник', 'участника', 'участников']) + ')' : '') + '. Вернуть будет нельзя.';
+    if (!(await dialog({ title: 'Удалить событие?', text, ok: 'Удалить', danger: true }))) return;
+    const res = await call({ action: 'deleteEvent', nick: me(), pin: orgPin() }).catch(() => ({ ok: false, error: 'Нет связи — попробуйте ещё раз' }));
+    if (!res.ok) return toast(res.error);
+    local.del(pinKey); session.del(pinKey);
+    if (inAppsScript) showMissing(); else location.href = location.pathname; // the start page
+  });
+
+  function eventLink() { return location.origin + location.pathname + '?e=' + encodeURIComponent(EVENT); }
+  function copyLink() {
+    const link = eventLink();
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(() => toast('Ссылка скопирована'), () => toast(link, 10000));
+    else toast(link, 10000);
+  }
+  $('copyLink').addEventListener('click', copyLink);
+  async function showCreated() {
+    const ok = await dialog({
+      title: 'Событие создано 🎉',
+      text: 'Вы организатор на этом телефоне.\nPIN организатора: ' + orgPin() + ' — запишите его, чтобы управлять событием с другого телефона.\n\nОтправьте друзьям ссылку на событие.',
+      ok: 'Скопировать ссылку', cancel: 'Закрыть',
+    });
+    if (ok) copyLink();
+  }
+  function showMissing() {
+    $('eventView').hidden = true; $('missing').hidden = false;
+    document.title = 'Событие не найдено';
+  }
+
+  // ---------- start page: every event, upcoming first ----------
+  let pastOpen = false, homeEvents = [];
+  function evCard(e) {
+    const org = !!local.get('picnic.pin.' + e.id);
+    return h('a', { class: 'card evcard', href: '?e=' + encodeURIComponent(e.id) },
+      h('h3', {}, e.title, org ? h('span', { class: 'badge accent' }, 'вы организатор') : null),
+      h('p', { class: 'meta' }, '📅 ' + (ISO_RE.test(e.date) ? fmtDate(e.date) : e.date || 'дата уточняется')),
+      e.place ? h('p', { class: 'meta' }, '📍 ' + e.place) : null,
+      h('p', { class: 'meta' }, '👥 ' + e.people + ' ' + plural(e.people, ['человек', 'человека', 'человек']) + (e.creator ? ' · организатор ' + e.creator : '')));
+  }
+  function renderHome() {
+    const today = todayIso(), dated = e => ISO_RE.test(e.date);
+    const past = homeEvents.filter(e => dated(e) && e.date < today).sort((a, b) => b.date.localeCompare(a.date));
+    const upcoming = homeEvents.filter(e => past.indexOf(e) < 0)
+      .sort((a, b) => (dated(a) ? 0 : 1) - (dated(b) ? 0 : 1) || (dated(a) && dated(b) ? a.date.localeCompare(b.date) : 0));
+    $('homeList').replaceChildren(...upcoming.map(evCard));
+    $('homeEmpty').hidden = !!homeEvents.length;
+    $('pastToggle').hidden = !past.length;
+    $('pastToggle').textContent = 'Прошедшие (' + past.length + ') ' + (pastOpen ? '▴' : '▾');
+    $('pastList').replaceChildren(...past.map(evCard));
+    $('pastList').hidden = !pastOpen;
+  }
+  $('pastToggle').addEventListener('click', () => { pastOpen = !pastOpen; renderHome(); });
+  function loadHome() {
+    call({ action: 'events' })
+      .then(r => { homeEvents = (r && r.events) || []; renderHome(); })
+      .catch(() => { if (!homeEvents.length) $('homeList').replaceChildren(h('p', { class: 'empty' }, 'Не удалось загрузить. Обновите страницу.')); });
+  }
+  $('newEvent').addEventListener('click', async () => {
+    if (!me()) await askNick(false); // the creator's nickname is shown as the organiser
+    if (me()) openEventForm(null);
+  });
 
   // ---------- render ----------
   let S = null;
@@ -589,7 +821,7 @@
 
     $('title').textContent = S.title || 'Пикник';
     document.title = S.title || 'Пикник';
-    $('date').textContent = S.date || ''; $('date').hidden = !S.date;
+    $('date').textContent = fmtDate(S.date); $('date').hidden = !S.date;
     const st = S.stats;
     renderInfo();
     $('stats').replaceChildren(...[
@@ -604,6 +836,7 @@
     if (me()) $('meNick').replaceChildren(nickNode(me()));
     renderParty();
     $('orgBanner').hidden = !orgPin();
+    renderPeople();
 
     // items
     $('itemList').replaceChildren(...S.items.map(itemRow));
@@ -643,22 +876,41 @@
   // ---------- polling: never while someone is typing or a form/dialog is open ----------
   function editing() {
     const a = document.activeElement;
-    return !!(formFor || editingItemId || partyTimer || !$('dialog').hidden || (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value));
+    return !!(formFor || editingItemId || partyTimer || eventFormOpen || !$('dialog').hidden || (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value));
   }
   function refresh() {
     if (document.visibilityState !== 'visible' || editing() || busy) return;
     const startedAt = actEpoch;
     call({ action: 'state' }).then(r => {
+      if (r && r.missing) return showMissing();
       if (r && r.state && !editing() && !busy && startedAt === actEpoch) render(r.state);
     }).catch(() => {});
   }
-  setInterval(refresh, 20000);
-  document.addEventListener('visibilitychange', refresh);
 
   // ---------- start ----------
-  call({ action: 'state' })
-    .then(r => { render(r.state); if (!me()) askNick(true); })
-    .catch(() => { $('loading').textContent = 'Не удалось загрузить. Обновите страницу.'; });
+  // "all events" = this same page without ?e= (works under any path, e.g. /picnic/)
+  document.querySelectorAll('a.back').forEach(a => { a.href = location.pathname; });
+  $('backLink').hidden = inAppsScript;
+  $('copyWrap').hidden = inAppsScript;
+  document.querySelector('#missing .back').hidden = inAppsScript;
+  if (!EVENT) {
+    $('eventView').hidden = true; $('home').hidden = false;
+    document.title = 'Наши события';
+    $('homeList').replaceChildren(h('p', { class: 'loading' }, 'Загрузка…'));
+    loadHome();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !eventFormOpen) loadHome(); });
+  } else {
+    setInterval(refresh, 20000);
+    document.addEventListener('visibilitychange', refresh);
+    call({ action: 'state' })
+      .then(r => {
+        if (r.missing) return showMissing();
+        render(r.state);
+        if (session.get('picnic.justCreated') === EVENT) { session.del('picnic.justCreated'); showCreated(); }
+        else if (!me()) askNick(true);
+      })
+      .catch(() => { $('loading').textContent = 'Не удалось загрузить. Обновите страницу.'; });
+  }
 })();
 </script>
 </body>
