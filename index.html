@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Шашлык · Karbii Dzor</title>
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --ink: #1d231c; --muted: #6a7266; --line: #e3e6df;
+    --accent: #2f7d4f; --accent-ink: #ffffff; --danger: #b3261e; --full: #eef0ec; --shadow: 0 1px 2px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121512; --card: #1b1f1b; --ink: #e6ebe4; --muted: #9aa396; --line: #2c322b;
+      --accent: #5fbf85; --accent-ink: #0d1a12; --danger: #f2887f; --full: #171a17; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  /* --vw = the real screen width (set by fitToScreen): Google's warning banner can make the
+     frame wider than the phone, and then everything laid out to 100% would be cut off */
+  body { width: var(--vw, auto); overflow-x: hidden; margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 40px; }
+  header h1 { margin: 0; font-size: 24px; line-height: 1.2; }
+  .date { color: var(--muted); margin-top: 2px; }
+  .stats { margin-top: 10px; font-size: 14px; color: var(--muted); }
+  .stats b { color: var(--ink); font-weight: 600; }
+  .whoami { margin-top: 6px; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+  .info { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); font-size: 15px; display: grid; gap: 6px; }
+  .info .place { font-weight: 600; color: var(--accent); text-decoration: none; overflow-wrap: anywhere; }
+  .info .text { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+  .info .pay { margin: 0; overflow-wrap: anywhere; }
+  .info .link { justify-self: start; }
+  .party { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 15px; }
+  .party .stepper .btn { width: 44px; }
+  .org { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 16%, var(--card)); display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 14px; }
+  .tabs { display: flex; gap: 6px; margin: 16px 0 12px; background: var(--line); padding: 4px; border-radius: 12px; }
+  .tabs button { flex: 1; min-height: 44px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: inherit; font-weight: 600; }
+  .tabs button[aria-selected="true"] { background: var(--card); box-shadow: var(--shadow); }
+  button, input, textarea { font: inherit; color: inherit; }
+  .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); font-weight: 600; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.danger { color: var(--danger); }
+  .btn:disabled { opacity: .55; }
+  .btn.wide { width: 100%; }
+  .link { border: 0; background: none; padding: 0 2px; color: var(--accent); font-weight: 600; min-height: 32px; }
+  .icon { width: 40px; min-height: 40px; border: 0; background: none; border-radius: 8px; color: var(--muted); font-size: 16px; flex: none; }
+  .icon:active { background: var(--line); }
+  input[type=text], input[type=time], input[type=password], textarea { width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  textarea { resize: vertical; min-height: 64px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > input { flex: 1; min-width: 0; }
+  ul.list { list-style: none; margin: 12px 0 0; padding: 0; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+  ul.list li { display: flex; align-items: center; gap: 6px; padding: 8px 6px 8px 12px; border-top: 1px solid var(--line); min-height: 52px; }
+  ul.list li:first-child { border-top: 0; }
+  .line-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .nick { font-weight: 600; }
+  a.nick { color: var(--accent); text-decoration: none; }
+  .muted { color: var(--muted); }
+  .empty { color: var(--muted); text-align: center; padding: 24px 8px; }
+  .card { background: var(--card); border-radius: 12px; padding: 14px; margin-top: 12px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+  .card.full { background: var(--full); opacity: .78; }
+  .badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--line); color: var(--muted); }
+  .card h3 { margin: 0 0 6px; font-size: 17px; overflow-wrap: anywhere; }
+  .card p { margin: 3px 0; overflow-wrap: anywhere; }
+  .card .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .card .actions .btn { flex: 1 1 auto; }
+  .seats b { font-size: 17px; }
+  .pax { display: inline-flex; align-items: center; }
+  .pax .icon { width: 32px; min-height: 32px; font-size: 13px; }
+  .form { background: var(--card); border-radius: 12px; padding: 14px; margin-top: 12px; border: 1px solid var(--line); display: grid; gap: 12px; }
+  .form label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+  .stepper { display: flex; align-items: center; gap: 12px; }
+  .stepper .btn { width: 48px; padding: 0; font-size: 20px; }
+  .stepper output { min-width: 28px; text-align: center; font-size: 20px; font-weight: 700; }
+  .status { margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); font-size: 15px; overflow-wrap: anywhere; }
+  footer { margin-top: 28px; text-align: center; font-size: 13px; }
+  .overlay { position: fixed; inset: 0; right: auto; width: var(--vw, 100%); background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+  .overlay[hidden] { display: none; }
+  .dialog { background: var(--card); color: var(--ink); width: 100%; max-width: 420px; border-radius: 14px; padding: 18px; display: grid; gap: 12px; }
+  .dialog h2 { margin: 0; font-size: 19px; }
+  .dialog p { margin: 0; color: var(--muted); }
+  .err { color: var(--danger); font-size: 14px; min-height: 1em; margin: 0; }
+  .dialog .row .btn { flex: 1; }
+  .toast { position: fixed; left: calc(var(--vw, 100vw) / 2); bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 10px; font-size: 15px; z-index: 30; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .toast.show { opacity: 1; }
+  .loading { text-align: center; color: var(--muted); padding: 40px 0; }
+  [hidden] { display: none !important; }
+</style>
+<meta property="og:title" content="Шашлык · Karbii Dzor">
+<meta property="og:description" content="воскресенье, 4 октября · Karbii Dzor Resort">
+<meta name="description" content="воскресенье, 4 октября · Karbii Dzor Resort">
+<script>window.PICNIC_API = "https://script.google.com/macros/s/AKfycbxTvbm7QXkR9946721i6ef9lnYifC9KqZB_AXLFKqLiyN5PPKdcDWZsbiE1Vs8pBBdY/exec";</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">Пикник</h1>
+    <div class="date" id="date" hidden></div>
+    <section class="info" id="infoCard" hidden>
+      <a class="place" id="infoPlace" target="_blank" rel="noopener"></a>
+      <p class="text" id="infoText"></p>
+      <p class="pay" id="infoPay"></p>
+      <button class="link" id="infoToggle" type="button"></button>
+    </section>
+    <div class="stats" id="stats"></div>
+    <div class="whoami" id="whoami" hidden>Вы: <span id="meNick" class="nick"></span> · <button class="link" id="changeNick" type="button">сменить</button></div>
+    <div class="party" id="party" hidden></div>
+    <div class="org" id="orgBanner" hidden><span>Режим организатора — можно менять всё</span><button class="btn" id="orgExit" type="button">Выйти</button></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="items" id="tabBtn-items">Что берём</button>
+    <button type="button" role="tab" data-tab="cars" id="tabBtn-cars">Машины</button>
+  </nav>
+
+  <div class="loading" id="loading">Загрузка…</div>
+
+  <main id="main" hidden>
+    <section id="tab-items">
+      <form class="row" id="itemForm" autocomplete="off">
+        <input type="text" id="itemText" maxlength="80" placeholder="Что вы берёте?" aria-label="Что вы берёте?">
+        <button class="btn primary" type="submit">Добавить</button>
+      </form>
+      <ul class="list" id="itemList"></ul>
+      <p class="empty" id="itemsEmpty">Пока никто ничего не добавил</p>
+    </section>
+
+    <section id="tab-cars" hidden>
+      <div id="carStatus"></div>
+      <form class="form" id="carForm" hidden autocomplete="off">
+        <label>Откуда / где можно подсесть
+          <textarea id="carPickup" maxlength="120" placeholder="Например: Центр, могу забрать у метро Барекамутюн"></textarea>
+        </label>
+        <label>Время выезда (необязательно)
+          <input type="time" id="carTime">
+        </label>
+        <label>Свободных мест (кроме вас)
+          <span class="stepper">
+            <button class="btn" type="button" id="seatMinus" aria-label="меньше">−</button>
+            <output id="seatValue">3</output>
+            <button class="btn" type="button" id="seatPlus" aria-label="больше">+</button>
+          </span>
+        </label>
+        <div class="row">
+          <button class="btn" type="button" id="carCancel">Отмена</button>
+          <button class="btn primary" type="submit" id="carSubmit">Добавить машину</button>
+        </div>
+      </form>
+      <div id="carList"></div>
+      <p class="empty" id="carsEmpty">Пока нет машин</p>
+    </section>
+  </main>
+
+  <footer><button class="link" id="orgOpen" type="button">Организатор</button><div class="muted" id="debugLine"></div></footer>
+</div>
+
+<div class="overlay" id="dialog" hidden>
+  <form class="dialog" id="dialogForm" autocomplete="off">
+    <h2 id="dialogTitle"></h2>
+    <p id="dialogText"></p>
+    <input id="dialogInput" hidden>
+    <p class="err" id="dialogErr"></p>
+    <div class="row">
+      <button class="btn" type="button" id="dialogCancel">Отмена</button>
+      <button class="btn primary" type="submit" id="dialogOk">OK</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- fit to the real screen (see --vw in the CSS) ----------
+  // ?fitw=375 forces the width and ?debug=1 prints the measurements (troubleshooting only)
+  let forcedW = 0, debug = false;
+  function fitToScreen() {
+    const sw = screen.width || 0, sh = screen.height || 0;
+    // iOS keeps screen.width at the portrait value, so pick by orientation
+    const deviceW = matchMedia('(orientation: landscape)').matches ? Math.max(sw, sh) : Math.min(sw, sh);
+    const vw = forcedW || (deviceW > 0 ? Math.min(window.innerWidth, deviceW) : window.innerWidth);
+    document.documentElement.style.setProperty('--vw', vw + 'px');
+    if (debug) document.getElementById('debugLine').textContent = `screen ${sw}×${sh} · frame ${window.innerWidth} · used ${vw}`;
+  }
+  fitToScreen();
+  addEventListener('resize', fitToScreen);
+  function applyParams(p) { forcedW = Number(p.fitw) || 0; debug = p.debug === '1'; fitToScreen(); }
+  if (window.google && google.script && google.script.url) {
+    google.script.url.getLocation(loc => applyParams((loc && loc.parameter) || {}));
+  } else {
+    applyParams(Object.fromEntries(new URLSearchParams(location.search)));
+  }
+
+  // ---------- storage (wrapped: may be unavailable in some in-app browsers) ----------
+  const mem = {};
+  function store(kind) {
+    return {
+      get(k) { try { return window[kind].getItem(k); } catch (e) { return mem[kind + k] ?? null; } },
+      set(k, v) { try { window[kind].setItem(k, v); } catch (e) { mem[kind + k] = v; } },
+      del(k) { try { window[kind].removeItem(k); } catch (e) { delete mem[kind + k]; } },
+    };
+  }
+  const local = store('localStorage'), session = store('sessionStorage');
+  const me = () => local.get('picnic.nick');
+  const orgPin = () => session.get('picnic.pin');
+
+  // ---------- nickname rules (mirror of normNick on the server) ----------
+  const USERNAME_RE = /^@[A-Za-z0-9_]{5,32}$/;
+  function checkNick(raw) {
+    const s = String(raw || '').trim().replace(/\s+/g, ' ');
+    if (s.startsWith('@')) return USERNAME_RE.test(s) ? { nick: s } : { error: 'Ник в Telegram: @ и 5–32 символа (латиница, цифры, _)' };
+    return s.length >= 2 && s.length <= 40 ? { nick: s } : { error: 'Введите @ник из Telegram или имя (2–40 символов)' };
+  }
+  const key = n => String(n || '').trim().toLowerCase();
+  const isMe = n => !!me() && key(n) === key(me());
+
+  // ---------- server bridge ----------
+  // Served by Apps Script → google.script.run. Hosted elsewhere (GitHub Pages) → POST to the web
+  // app's doPost, whose URL the build injects as window.PICNIC_API. text/plain keeps it a "simple"
+  // cross-site request: no CORS preflight, and no Google cookies.
+  const inAppsScript = !!(window.google && google.script && google.script.run);
+  function call(req) {
+    if (inAppsScript) {
+      return new Promise((resolve, reject) =>
+        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).api(req));
+    }
+    return fetch(window.PICNIC_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(req) })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  let busy = false;
+  // bumped by every action: a poll that started before it carries older data and must be dropped
+  let actEpoch = 0;
+  async function act(req) {
+    if (busy) return false;
+    busy = true;
+    actEpoch++;
+    const pin = orgPin();
+    // a save can take a few seconds (Google's cold start); say so, or people tap again
+    const slow = setTimeout(() => toast('Сохраняю…', 0), 400);
+    const res = await call(Object.assign({}, req, { nick: me() }, pin ? { pin } : {}))
+      .catch(() => ({ ok: false, error: 'Нет связи — попробуйте ещё раз' }));
+    clearTimeout(slow);
+    busy = false;
+    if (res.state) render(res.state);
+    if (!res.ok) toast(res.error); else hideToast('Сохраняю…');
+    return res.ok;
+  }
+
+  // ---------- tiny DOM helpers (text only, never innerHTML) ----------
+  const $ = id => document.getElementById(id);
+  function h(tag, props, ...kids) {
+    const el = document.createElement(tag);
+    Object.entries(props || {}).forEach(([k, v]) => {
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else if (v === true) el.setAttribute(k, '');
+      else if (v !== false && v != null) el.setAttribute(k, v);
+    });
+    kids.flat().forEach(c => { if (c != null && c !== false) el.append(c instanceof Node ? c : document.createTextNode(String(c))); });
+    return el;
+  }
+  function nickNode(n) {
+    if (USERNAME_RE.test(n)) return h('a', { class: 'nick', href: 'https://t.me/' + n.slice(1), target: '_blank', rel: 'noopener' }, n);
+    return h('span', { class: 'nick' }, n);
+  }
+  function plural(n, forms) {
+    const a = Math.abs(n) % 100, b = a % 10;
+    return forms[a > 10 && a < 20 ? 2 : b > 1 && b < 5 ? 1 : b === 1 ? 0 : 2];
+  }
+  let toastTimer;
+  // ms = 0 keeps the toast up until hideToast()
+  function toast(msg, ms = 3500) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    if (ms) toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+  }
+  function hideToast(onlyIf) {
+    const t = $('toast');
+    if (!onlyIf || t.textContent === onlyIf) { clearTimeout(toastTimer); t.classList.remove('show'); }
+  }
+
+  // ---------- dialog (own implementation: native confirm/prompt are unreliable in iframes) ----------
+  let dialogResolve = null, dialogValidate = null;
+  function dialog({ title, text = '', input = null, ok = 'OK', danger = false, validate = null }) {
+    $('dialogTitle').textContent = title;
+    $('dialogText').textContent = text; $('dialogText').hidden = !text;
+    $('dialogErr').textContent = '';
+    const inp = $('dialogInput');
+    inp.hidden = !input;
+    if (input) { inp.type = input.type || 'text'; inp.placeholder = input.placeholder || ''; inp.value = input.value || ''; inp.inputMode = input.inputMode || ''; }
+    $('dialogOk').textContent = ok;
+    $('dialogOk').className = 'btn ' + (danger ? 'danger' : 'primary');
+    $('dialogCancel').hidden = !!(input && input.required);
+    dialogValidate = validate;
+    $('dialog').hidden = false;
+    setTimeout(() => (input ? inp : $('dialogOk')).focus(), 30);
+    return new Promise(r => { dialogResolve = r; });
+  }
+  function closeDialog(value) { $('dialog').hidden = true; const r = dialogResolve; dialogResolve = null; if (r) r(value); }
+  $('dialogCancel').addEventListener('click', () => closeDialog(null));
+  $('dialogForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const value = $('dialogInput').hidden ? true : $('dialogInput').value;
+    if (dialogValidate) { const err = dialogValidate(value); if (err) { $('dialogErr').textContent = err; return; } }
+    closeDialog(value);
+  });
+
+  // ---------- nickname gate ----------
+  async function askNick(required) {
+    const v = await dialog({
+      title: 'Как вас зовут?', text: 'Ник из Telegram, чтобы друзья могли вам написать',
+      input: { placeholder: '@ваш_ник или имя', value: me() || '', required }, ok: 'Продолжить',
+      validate: v => checkNick(v).error,
+    });
+    if (v == null) return;
+    local.set('picnic.nick', checkNick(v).nick);
+    if (S) render(S);
+  }
+  $('changeNick').addEventListener('click', () => askNick(false));
+
+  // ---------- organiser mode ----------
+  $('orgOpen').addEventListener('click', async () => {
+    const pin = await dialog({ title: 'Режим организатора', text: 'PIN есть в таблице, во вкладке Settings', input: { type: 'password', inputMode: 'numeric', placeholder: 'PIN' }, ok: 'Войти' });
+    if (!pin) return;
+    session.set('picnic.pin', pin.trim());
+    // act() already re-rendered with the PIN set; on failure drop it and render again,
+    // otherwise the organiser banner and buttons stay on screen for a rejected PIN
+    if (!(await act({ action: 'checkPin' }))) session.del('picnic.pin');
+    render(S);
+  });
+  $('orgExit').addEventListener('click', () => { session.del('picnic.pin'); render(S); });
+
+  // ---------- tabs ----------
+  function showTab(name) {
+    ['items', 'cars'].forEach(t => {
+      $('tab-' + t).hidden = t !== name;
+      $('tabBtn-' + t).setAttribute('aria-selected', String(t === name));
+    });
+    local.set('picnic.tab', name);
+  }
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  showTab(local.get('picnic.tab') === 'cars' ? 'cars' : 'items');
+
+  // ---------- items ----------
+  let editingItemId = null;
+  $('itemForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!me()) return askNick(true);
+    const text = $('itemText').value.trim();
+    if (!text) return;
+    if (await act({ action: 'addItem', text })) $('itemText').value = '';
+  });
+
+  function itemRow(it) {
+    const mine = isMe(it.nick) || !!orgPin();
+    if (editingItemId === it.id) {
+      const inp = h('input', { type: 'text', maxlength: '80', value: it.text, 'aria-label': 'Изменить' });
+      const save = async () => { if (await act({ action: 'editItem', id: it.id, text: inp.value })) { editingItemId = null; render(S); } };
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { editingItemId = null; render(S); } });
+      setTimeout(() => inp.focus(), 0);
+      return h('li', {}, h('div', { class: 'row', style: 'flex:1' }, inp,
+        h('button', { class: 'btn primary', type: 'button', onclick: save }, 'OK'),
+        h('button', { class: 'icon', type: 'button', 'aria-label': 'Отмена', onclick: () => { editingItemId = null; render(S); } }, '↩')));
+    }
+    return h('li', {},
+      h('span', { class: 'line-text' }, nickNode(it.nick), ' — ', it.text),
+      mine && h('button', { class: 'icon', type: 'button', 'aria-label': 'Изменить', onclick: () => { editingItemId = it.id; render(S); } }, '✏️'),
+      mine && h('button', { class: 'icon', type: 'button', 'aria-label': 'Удалить', onclick: async () => {
+        if (await dialog({ title: 'Удалить?', text: '«' + it.text + '»', ok: 'Удалить', danger: true })) act({ action: 'deleteItem', id: it.id });
+      } }, '✕'));
+  }
+
+  // ---------- cars ----------
+  let carFormFor = null; // null = closed, 'new' = add, or car id = edit
+  let seats = 3;
+  function setSeats(n) { seats = Math.max(1, Math.min(8, n)); $('seatValue').textContent = String(seats); }
+  $('seatMinus').addEventListener('click', () => setSeats(seats - 1));
+  $('seatPlus').addEventListener('click', () => setSeats(seats + 1));
+  function openCarForm(car) {
+    if (!me()) return askNick(true);
+    carFormFor = car ? car.id : 'new';
+    $('carPickup').value = car ? car.pickup : '';
+    $('carTime').value = car ? car.time : '';
+    setSeats(car ? car.seats : 3);
+    $('carSubmit').textContent = car ? 'Сохранить' : 'Добавить машину';
+    render(S);
+    setTimeout(() => $('carPickup').focus(), 30);
+  }
+  $('carCancel').addEventListener('click', () => { carFormFor = null; render(S); });
+  $('carForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const req = { pickup: $('carPickup').value, time: $('carTime').value, seats };
+    const ok = carFormFor === 'new' ? await act(Object.assign({ action: 'addCar' }, req))
+                                    : await act(Object.assign({ action: 'editCar', id: carFormFor }, req));
+    if (ok) { carFormFor = null; render(S); }
+  });
+
+  function carCard(c, ctx) {
+    const mineCar = isMe(c.driver), org = !!orgPin();
+    const bookedHere = c.passengers.find(p => isMe(p.nick));
+    const full = c.free <= 0;
+    const pax = c.passengers.length
+      // separator stays outside the inline-flex span: flex boxes drop a leading space
+      ? c.passengers.flatMap((p, i) => [i ? ', ' : null, h('span', { class: 'pax' }, nickNode(p.nick),
+          (mineCar || org) && h('button', { class: 'icon', type: 'button', 'aria-label': 'Убрать ' + p.nick, onclick: async () => {
+            if (await dialog({ title: 'Убрать пассажира?', text: p.nick, ok: 'Убрать', danger: true })) act({ action: 'unbook', bookingId: p.bookingId });
+          } }, '✕'))])
+      : [h('span', { class: 'muted' }, 'пока никого')];
+
+    const actions = [];
+    if (bookedHere) {
+      actions.push(h('button', { class: 'btn', type: 'button', onclick: () => act({ action: 'unbook', bookingId: bookedHere.bookingId }) }, 'Отменить бронь'));
+    } else if (!mineCar && !ctx.myCar && !ctx.myRide) {
+      actions.push(full
+        ? h('button', { class: 'btn wide', type: 'button', disabled: true }, 'Мест нет')
+        : h('button', { class: 'btn primary wide', type: 'button', onclick: () => (me() ? act({ action: 'book', carId: c.id }) : askNick(true)) }, 'Забронировать место'));
+    }
+    if (mineCar || org) {
+      actions.push(h('button', { class: 'btn', type: 'button', onclick: () => openCarForm(c) }, 'Изменить'));
+      actions.push(h('button', { class: 'btn danger', type: 'button', onclick: async () => {
+        const n = c.passengers.length;
+        const text = n ? 'На этой машине ' + n + ' ' + plural(n, ['пассажир', 'пассажира', 'пассажиров']) + ' — их бронь тоже удалится.' : '';
+        if (await dialog({ title: 'Удалить машину?', text, ok: 'Удалить', danger: true })) act({ action: 'deleteCar', id: c.id });
+      } }, 'Удалить'));
+    }
+
+    return h('div', { class: 'card' + (full ? ' full' : '') },
+      h('h3', {}, '🚗 ', nickNode(c.driver), mineCar ? ' (вы)' : ''),
+      h('p', {}, h('span', { class: 'muted' }, 'Откуда: '), c.pickup),
+      c.time && h('p', {}, h('span', { class: 'muted' }, 'Выезд: '), c.time),
+      h('p', { class: 'seats' }, h('span', { class: 'muted' }, 'Свободно: '), h('b', {}, String(c.free)), ' из ' + c.seats, full ? h('span', { class: 'badge' }, 'мест нет') : null),
+      h('p', {}, h('span', { class: 'muted' }, 'Едут: '), pax),
+      actions.length ? h('div', { class: 'actions' }, actions) : null);
+  }
+
+  // ---------- info card (text comes from the Sheet's Settings tab) ----------
+  $('infoToggle').addEventListener('click', () => {
+    local.set('picnic.infoCollapsed', local.get('picnic.infoCollapsed') === '1' ? '0' : '1');
+    render(S);
+  });
+  function renderInfo() {
+    const has = !!(S.place || S.info || S.pay);
+    $('infoCard').hidden = !has;
+    if (!has) return;
+    const collapsed = local.get('picnic.infoCollapsed') === '1';
+    $('infoPlace').hidden = !S.place;
+    $('infoPlace').textContent = '📍 ' + S.place;
+    $('infoPlace').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(S.place);
+    $('infoText').textContent = S.info;
+    $('infoText').hidden = collapsed || !S.info;
+    $('infoPay').hidden = !S.pay;
+    $('infoPay').replaceChildren('💬 Бронь места и оплата — напишите ', nickNode(S.pay));
+    $('infoToggle').hidden = !S.info;
+    $('infoToggle').textContent = collapsed ? 'Подробнее ▾' : 'Свернуть ▴';
+  }
+
+  // ---------- "Я еду" / "Сколько вас" ----------
+  let pendingParty = null, partyTimer = null;
+  function myPartyRow() { return (S.people || []).find(p => isMe(p.nick)); }
+  function iAmOnPage() {
+    return !!myPartyRow() || S.items.some(i => isMe(i.nick)) || S.cars.some(c => isMe(c.driver) || c.passengers.some(p => isMe(p.nick)));
+  }
+  function bumpParty(delta) {
+    const current = pendingParty ?? (myPartyRow() ? myPartyRow().count : 1);
+    pendingParty = Math.max(1, Math.min(10, current + delta));
+    render(S);
+    clearTimeout(partyTimer); // one request after the taps stop, not one per tap
+    const send = async () => {
+      if (busy) { partyTimer = setTimeout(send, 300); return; } // another save is running: wait, don't drop it
+      const count = pendingParty;
+      partyTimer = null;
+      await act({ action: 'setParty', count });
+      pendingParty = null;
+      render(S);
+    };
+    partyTimer = setTimeout(send, 700);
+  }
+  function renderParty() {
+    $('party').hidden = !me();
+    if (!me()) return;
+    if (!iAmOnPage() && pendingParty == null) {
+      $('party').replaceChildren(h('button', { class: 'btn primary', type: 'button', onclick: () => act({ action: 'setParty', count: 1 }) }, '✋ Я еду'));
+      return;
+    }
+    const n = pendingParty ?? (myPartyRow() ? myPartyRow().count : 1);
+    // wrapped in h(): replaceChildren() itself would print a skipped (undefined) child as "undefined"
+    $('party').replaceChildren(h('span', { style: 'display: contents' },
+      h('span', {}, 'Сколько вас (с вами):'),
+      h('span', { class: 'stepper' },
+        h('button', { class: 'btn', type: 'button', 'aria-label': 'меньше', disabled: n <= 1, onclick: () => bumpParty(-1) }, '−'),
+        h('output', {}, String(n)),
+        h('button', { class: 'btn', type: 'button', 'aria-label': 'больше', disabled: n >= 10, onclick: () => bumpParty(1) }, '+')),
+      myPartyRow() && h('button', { class: 'link', type: 'button', onclick: async () => {
+        if (await dialog({ title: 'Не едете?', text: 'Вас уберут из подсчёта людей. Ваши вещи и машина останутся — удалите их сами, если нужно.', ok: 'Не еду', danger: true })) act({ action: 'leave' });
+      } }, 'не еду')));
+  }
+
+  // ---------- render ----------
+  let S = null;
+  function render(state) {
+    if (!state) return;
+    S = state;
+    $('loading').hidden = true; $('main').hidden = false;
+
+    $('title').textContent = S.title || 'Пикник';
+    document.title = S.title || 'Пикник';
+    $('date').textContent = S.date || ''; $('date').hidden = !S.date;
+    const st = S.stats;
+    renderInfo();
+    $('stats').replaceChildren(...[
+      [st.people, ['человек', 'человека', 'человек']],
+      [st.cars, ['машина', 'машины', 'машин']],
+      [st.freeSeats, ['свободное место', 'свободных места', 'свободных мест']],
+      [st.items, ['вещь в списке', 'вещи в списке', 'вещей в списке']],
+    ].flatMap(([n, f], i) => [i ? ' · ' : '', h('b', {}, String(n)), ' ' + plural(n, f)]));
+
+    $('whoami').hidden = !me();
+    if (me()) $('meNick').replaceChildren(nickNode(me()));
+    renderParty();
+    $('orgBanner').hidden = !orgPin();
+
+    // items
+    $('itemList').replaceChildren(...S.items.map(itemRow));
+    $('itemList').hidden = !S.items.length;
+    $('itemsEmpty').hidden = !!S.items.length;
+
+    // cars
+    const myCar = S.cars.find(c => isMe(c.driver));
+    const myRide = S.cars.find(c => c.passengers.some(p => isMe(p.nick)));
+    const status = [];
+    if (carFormFor) { /* form is open: no status line */ }
+    else if (myCar) status.push(h('div', { class: 'status' }, 'Вы за рулём. Свободно мест: ', h('b', {}, String(myCar.free))));
+    else if (myRide) status.push(h('div', { class: 'status' }, 'Вы едете с ', nickNode(myRide.driver)));
+    else status.push(h('button', { class: 'btn primary wide', type: 'button', onclick: () => openCarForm(null) }, '🚗 Я на машине'));
+    $('carStatus').replaceChildren(...status);
+    $('carForm').hidden = !carFormFor;
+    $('carList').replaceChildren(...S.cars.map(c => carCard(c, { myCar, myRide })));
+    $('carsEmpty').hidden = !!S.cars.length;
+  }
+
+  // ---------- polling: never while someone is typing or a form/dialog is open ----------
+  function editing() {
+    const a = document.activeElement;
+    return !!(carFormFor || editingItemId || partyTimer || !$('dialog').hidden || (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value));
+  }
+  function refresh() {
+    if (document.visibilityState !== 'visible' || editing() || busy) return;
+    const startedAt = actEpoch;
+    call({ action: 'state' }).then(r => {
+      if (r && r.state && !editing() && !busy && startedAt === actEpoch) render(r.state);
+    }).catch(() => {});
+  }
+  setInterval(refresh, 20000);
+  document.addEventListener('visibilitychange', refresh);
+
+  // ---------- start ----------
+  call({ action: 'state' })
+    .then(r => { render(r.state); if (!me()) askNick(true); })
+    .catch(() => { $('loading').textContent = 'Не удалось загрузить. Обновите страницу.'; });
+})();
+</script>
+</body>
+</html>
