@@ -69,10 +69,14 @@
   .pax { display: inline-flex; align-items: center; }
   .pax .icon { width: 32px; min-height: 32px; font-size: 13px; }
   .form { background: var(--card); border-radius: 12px; padding: 14px; margin-top: 12px; border: 1px solid var(--line); display: grid; gap: 12px; }
-  .form label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+  .form label, .form .label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg .btn { flex: 1 1 0; min-width: 64px; }
+  .seg .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .stepper { display: flex; align-items: center; gap: 12px; }
   .stepper .btn { width: 48px; padding: 0; font-size: 20px; }
   .stepper output { min-width: 28px; text-align: center; font-size: 20px; font-weight: 700; }
+  .hint { margin: 8px 2px 0; font-size: 14px; }
   .status { margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); font-size: 15px; overflow-wrap: anywhere; }
   footer { margin-top: 28px; text-align: center; font-size: 13px; }
   .overlay { position: fixed; inset: 0; right: auto; width: var(--vw, 100%); background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
@@ -112,6 +116,7 @@
   <nav class="tabs" role="tablist">
     <button type="button" role="tab" data-tab="items" id="tabBtn-items">Что берём</button>
     <button type="button" role="tab" data-tab="cars" id="tabBtn-cars">Машины</button>
+    <button type="button" role="tab" data-tab="taxis" id="tabBtn-taxis">Такси</button>
   </nav>
 
   <div class="loading" id="loading">Загрузка…</div>
@@ -149,6 +154,32 @@
       </form>
       <div id="carList"></div>
       <p class="empty" id="carsEmpty">Пока нет машин</p>
+    </section>
+
+    <section id="tab-taxis" hidden>
+      <div id="taxiStatus"></div>
+      <form class="form" id="taxiForm" hidden autocomplete="off">
+        <label>Откуда едете / где собираетесь
+          <textarea id="taxiPickup" maxlength="120" placeholder="Например: Центр, у метро Барекамутюн"></textarea>
+        </label>
+        <label>Время выезда (необязательно)
+          <input type="time" id="taxiTime">
+        </label>
+        <div class="label">Сколько человек в такси (вместе с вами)
+          <span class="seg" id="taxiSizes" role="group" aria-label="Сколько человек в такси">
+            <button class="btn" type="button" data-size="4">4</button>
+            <button class="btn" type="button" data-size="6">6</button>
+            <button class="btn" type="button" data-size="7">7</button>
+          </span>
+          <span class="muted hint">6–7 — это минивэн</span>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="taxiCancel">Отмена</button>
+          <button class="btn primary" type="submit" id="taxiSubmit">Создать такси</button>
+        </div>
+      </form>
+      <div id="taxiList"></div>
+      <p class="empty" id="taxisEmpty">Пока нет такси. Создайте своё — попутчики присоединятся.</p>
     </section>
   </main>
 
@@ -334,15 +365,16 @@
   $('orgExit').addEventListener('click', () => { session.del('picnic.pin'); render(S); });
 
   // ---------- tabs ----------
+  const TABS = ['items', 'cars', 'taxis'];
   function showTab(name) {
-    ['items', 'cars'].forEach(t => {
+    TABS.forEach(t => {
       $('tab-' + t).hidden = t !== name;
       $('tabBtn-' + t).setAttribute('aria-selected', String(t === name));
     });
     local.set('picnic.tab', name);
   }
   document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-  showTab(local.get('picnic.tab') === 'cars' ? 'cars' : 'items');
+  showTab(TABS.indexOf(local.get('picnic.tab')) >= 0 ? local.get('picnic.tab') : 'items');
 
   // ---------- items ----------
   let editingItemId = null;
@@ -373,66 +405,88 @@
       } }, '✕'));
   }
 
-  // ---------- cars ----------
-  let carFormFor = null; // null = closed, 'new' = add, or car id = edit
-  let seats = 3;
+  // ---------- rides: cars and taxis share one card, one form flow and the same server rules ----------
+  const RIDE = {
+    car: {
+      icon: '🚗', owner: c => [nickNode(c.driver)], riders: 'Едут: ', join: 'Забронировать место', leave: 'Отменить бронь',
+      delTitle: 'Удалить машину?', onboard: 'На этой машине', total: c => c.seats,
+      form: { form: 'carForm', pickup: 'carPickup', time: 'carTime', submit: 'carSubmit', cancel: 'carCancel', add: 'Добавить машину' },
+    },
+    taxi: {
+      icon: '🚕', owner: c => [nickNode(c.driver), ' собирает такси'], riders: 'Попутчики: ', join: 'Присоединиться', leave: 'Выйти из такси',
+      delTitle: 'Удалить такси?', onboard: 'В этом такси', total: c => c.size, // the organiser takes one of the seats
+      form: { form: 'taxiForm', pickup: 'taxiPickup', time: 'taxiTime', submit: 'taxiSubmit', cancel: 'taxiCancel', add: 'Создать такси' },
+    },
+  };
+  let formFor = null; // null = closed, else { kind, id } with id 'new' or the ride being edited
+  let seats = 3, taxiSize = 4;
   function setSeats(n) { seats = Math.max(1, Math.min(8, n)); $('seatValue').textContent = String(seats); }
   $('seatMinus').addEventListener('click', () => setSeats(seats - 1));
   $('seatPlus').addEventListener('click', () => setSeats(seats + 1));
-  function openCarForm(car) {
-    if (!me()) return askNick(true);
-    carFormFor = car ? car.id : 'new';
-    $('carPickup').value = car ? car.pickup : '';
-    $('carTime').value = car ? car.time : '';
-    setSeats(car ? car.seats : 3);
-    $('carSubmit').textContent = car ? 'Сохранить' : 'Добавить машину';
-    render(S);
-    setTimeout(() => $('carPickup').focus(), 30);
+  function setTaxiSize(n) {
+    taxiSize = n;
+    document.querySelectorAll('#taxiSizes button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.size) === n)));
   }
-  $('carCancel').addEventListener('click', () => { carFormFor = null; render(S); });
-  $('carForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const req = { pickup: $('carPickup').value, time: $('carTime').value, seats };
-    const ok = carFormFor === 'new' ? await act(Object.assign({ action: 'addCar' }, req))
-                                    : await act(Object.assign({ action: 'editCar', id: carFormFor }, req));
-    if (ok) { carFormFor = null; render(S); }
+  document.querySelectorAll('#taxiSizes button').forEach(b => b.addEventListener('click', () => setTaxiSize(Number(b.dataset.size))));
+
+  function openRideForm(kind, ride) {
+    if (!me()) return askNick(true);
+    const f = RIDE[kind].form;
+    formFor = { kind, id: ride ? ride.id : 'new' };
+    $(f.pickup).value = ride ? ride.pickup : '';
+    $(f.time).value = ride ? ride.time : '';
+    if (kind === 'taxi') setTaxiSize(ride ? ride.size : 4); else setSeats(ride ? ride.seats : 3);
+    $(f.submit).textContent = ride ? 'Сохранить' : f.add;
+    render(S);
+    setTimeout(() => $(f.pickup).focus(), 30);
+  }
+  Object.entries(RIDE).forEach(([kind, { form: f }]) => {
+    $(f.cancel).addEventListener('click', () => { formFor = null; render(S); });
+    $(f.form).addEventListener('submit', async e => {
+      e.preventDefault();
+      const req = Object.assign({ kind, pickup: $(f.pickup).value, time: $(f.time).value }, kind === 'taxi' ? { size: taxiSize } : { seats });
+      const ok = formFor.id === 'new' ? await act(Object.assign({ action: 'addCar' }, req))
+                                      : await act(Object.assign({ action: 'editCar', id: formFor.id }, req));
+      if (ok) { formFor = null; render(S); }
+    });
   });
 
-  function carCard(c, ctx) {
-    const mineCar = isMe(c.driver), org = !!orgPin();
+  function rideCard(c, ctx) {
+    const L = RIDE[c.kind] || RIDE.car;
+    const mine = isMe(c.driver), org = !!orgPin();
     const bookedHere = c.passengers.find(p => isMe(p.nick));
     const full = c.free <= 0;
     const pax = c.passengers.length
       // separator stays outside the inline-flex span: flex boxes drop a leading space
       ? c.passengers.flatMap((p, i) => [i ? ', ' : null, h('span', { class: 'pax' }, nickNode(p.nick),
-          (mineCar || org) && h('button', { class: 'icon', type: 'button', 'aria-label': 'Убрать ' + p.nick, onclick: async () => {
-            if (await dialog({ title: 'Убрать пассажира?', text: p.nick, ok: 'Убрать', danger: true })) act({ action: 'unbook', bookingId: p.bookingId });
+          (mine || org) && h('button', { class: 'icon', type: 'button', 'aria-label': 'Убрать ' + p.nick, onclick: async () => {
+            if (await dialog({ title: 'Убрать попутчика?', text: p.nick, ok: 'Убрать', danger: true })) act({ action: 'unbook', bookingId: p.bookingId });
           } }, '✕'))])
       : [h('span', { class: 'muted' }, 'пока никого')];
 
     const actions = [];
     if (bookedHere) {
-      actions.push(h('button', { class: 'btn', type: 'button', onclick: () => act({ action: 'unbook', bookingId: bookedHere.bookingId }) }, 'Отменить бронь'));
-    } else if (!mineCar && !ctx.myCar && !ctx.myRide) {
+      actions.push(h('button', { class: 'btn', type: 'button', onclick: () => act({ action: 'unbook', bookingId: bookedHere.bookingId }) }, L.leave));
+    } else if (!mine && !ctx.myCar && !ctx.myRide) {
       actions.push(full
         ? h('button', { class: 'btn wide', type: 'button', disabled: true }, 'Мест нет')
-        : h('button', { class: 'btn primary wide', type: 'button', onclick: () => (me() ? act({ action: 'book', carId: c.id }) : askNick(true)) }, 'Забронировать место'));
+        : h('button', { class: 'btn primary wide', type: 'button', onclick: () => (me() ? act({ action: 'book', carId: c.id }) : askNick(true)) }, L.join));
     }
-    if (mineCar || org) {
-      actions.push(h('button', { class: 'btn', type: 'button', onclick: () => openCarForm(c) }, 'Изменить'));
+    if (mine || org) {
+      actions.push(h('button', { class: 'btn', type: 'button', onclick: () => openRideForm(c.kind, c) }, 'Изменить'));
       actions.push(h('button', { class: 'btn danger', type: 'button', onclick: async () => {
         const n = c.passengers.length;
-        const text = n ? 'На этой машине ' + n + ' ' + plural(n, ['пассажир', 'пассажира', 'пассажиров']) + ' — их бронь тоже удалится.' : '';
-        if (await dialog({ title: 'Удалить машину?', text, ok: 'Удалить', danger: true })) act({ action: 'deleteCar', id: c.id });
+        const text = n ? L.onboard + ' ' + n + ' ' + plural(n, ['попутчик', 'попутчика', 'попутчиков']) + ' — их места тоже удалятся.' : '';
+        if (await dialog({ title: L.delTitle, text, ok: 'Удалить', danger: true })) act({ action: 'deleteCar', id: c.id });
       } }, 'Удалить'));
     }
 
     return h('div', { class: 'card' + (full ? ' full' : '') },
-      h('h3', {}, '🚗 ', nickNode(c.driver), mineCar ? ' (вы)' : ''),
+      h('h3', {}, L.icon + ' ', ...L.owner(c), mine ? ' (вы)' : ''),
       h('p', {}, h('span', { class: 'muted' }, 'Откуда: '), c.pickup),
       c.time && h('p', {}, h('span', { class: 'muted' }, 'Выезд: '), c.time),
-      h('p', { class: 'seats' }, h('span', { class: 'muted' }, 'Свободно: '), h('b', {}, String(c.free)), ' из ' + c.seats, full ? h('span', { class: 'badge' }, 'мест нет') : null),
-      h('p', {}, h('span', { class: 'muted' }, 'Едут: '), pax),
+      h('p', { class: 'seats' }, h('span', { class: 'muted' }, 'Свободно: '), h('b', {}, String(c.free)), ' из ' + L.total(c), full ? h('span', { class: 'badge' }, 'мест нет') : null),
+      h('p', {}, h('span', { class: 'muted' }, L.riders), pax),
       actions.length ? h('div', { class: 'actions' }, actions) : null);
   }
 
@@ -513,9 +567,10 @@
     $('stats').replaceChildren(...[
       [st.people, ['человек', 'человека', 'человек']],
       [st.cars, ['машина', 'машины', 'машин']],
+      st.taxis ? [st.taxis, ['такси', 'такси', 'такси']] : null, // only once there are taxis: keeps the line short
       [st.freeSeats, ['свободное место', 'свободных места', 'свободных мест']],
       [st.items, ['вещь в списке', 'вещи в списке', 'вещей в списке']],
-    ].flatMap(([n, f], i) => [i ? ' · ' : '', h('b', {}, String(n)), ' ' + plural(n, f)]));
+    ].filter(Boolean).flatMap(([n, f], i) => [i ? ' · ' : '', h('b', {}, String(n)), ' ' + plural(n, f)]));
 
     $('whoami').hidden = !me();
     if (me()) $('meNick').replaceChildren(nickNode(me()));
@@ -527,24 +582,40 @@
     $('itemList').hidden = !S.items.length;
     $('itemsEmpty').hidden = !!S.items.length;
 
-    // cars
-    const myCar = S.cars.find(c => isMe(c.driver));
-    const myRide = S.cars.find(c => c.passengers.some(p => isMe(p.nick)));
-    const status = [];
-    if (carFormFor) { /* form is open: no status line */ }
-    else if (myCar) status.push(h('div', { class: 'status' }, 'Вы за рулём. Свободно мест: ', h('b', {}, String(myCar.free))));
-    else if (myRide) status.push(h('div', { class: 'status' }, 'Вы едете с ', nickNode(myRide.driver)));
-    else status.push(h('button', { class: 'btn primary wide', type: 'button', onclick: () => openCarForm(null) }, '🚗 Я на машине'));
-    $('carStatus').replaceChildren(...status);
-    $('carForm').hidden = !carFormFor;
-    $('carList').replaceChildren(...S.cars.map(c => carCard(c, { myCar, myRide })));
-    $('carsEmpty').hidden = !!S.cars.length;
+    // cars and taxis: one ride per person across both tabs, so each tab's status line says
+    // where you already are, and "join" buttons appear only while you have no ride yet
+    const myCar = S.cars.find(c => isMe(c.driver));                               // a car you drive or a taxi you organise
+    const myRide = S.cars.find(c => c.passengers.some(p => isMe(p.nick)));        // a car or taxi you joined
+    const ctx = { myCar, myRide };
+    const where = () => {
+      if (myCar) return myCar.kind === 'taxi'
+        ? ['Вы собираете такси. Свободно мест: ', h('b', {}, String(myCar.free))]
+        : ['Вы за рулём. Свободно мест: ', h('b', {}, String(myCar.free))];
+      if (myRide) return myRide.kind === 'taxi' ? ['Вы едете на такси с ', nickNode(myRide.driver)] : ['Вы едете в машине с ', nickNode(myRide.driver)];
+      return null;
+    };
+    const status = (kind, addLabel, hint) => {
+      if (formFor && formFor.kind === kind) return []; // that tab's form is open
+      const w = where();
+      if (w) return [h('div', { class: 'status' }, ...w)];
+      return [h('button', { class: 'btn primary wide', type: 'button', onclick: () => openRideForm(kind, null) }, addLabel),
+              hint && h('p', { class: 'muted hint' }, hint)].filter(Boolean);
+    };
+    const cars = S.cars.filter(c => c.kind !== 'taxi'), taxis = S.cars.filter(c => c.kind === 'taxi');
+    $('carStatus').replaceChildren(...status('car', '🚗 Я на машине'));
+    $('carForm').hidden = !(formFor && formFor.kind === 'car');
+    $('carList').replaceChildren(...cars.map(c => rideCard(c, ctx)));
+    $('carsEmpty').hidden = !!cars.length;
+    $('taxiStatus').replaceChildren(...status('taxi', '🚕 Беру такси', 'Создайте такси — попутчики из вашего района присоединятся. Или присоединитесь к такси ниже.'));
+    $('taxiForm').hidden = !(formFor && formFor.kind === 'taxi');
+    $('taxiList').replaceChildren(...taxis.map(c => rideCard(c, ctx)));
+    $('taxisEmpty').hidden = !!taxis.length;
   }
 
   // ---------- polling: never while someone is typing or a form/dialog is open ----------
   function editing() {
     const a = document.activeElement;
-    return !!(carFormFor || editingItemId || partyTimer || !$('dialog').hidden || (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value));
+    return !!(formFor || editingItemId || partyTimer || !$('dialog').hidden || (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value));
   }
   function refresh() {
     if (document.visibilityState !== 'visible' || editing() || busy) return;
